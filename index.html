@@ -48,9 +48,9 @@
         /* The Game Board Container */
         #game-board {
             position: relative;
-            width: 95vw;
-            max-width: 800px; /* Increased from 600px to make the circle much larger */
-            aspect-ratio: 1 / 1; /* Keep it perfectly square for the circle */
+            width: min(95vw, 85vh); /* FIX: Uses whichever is smaller to prevent cutting off */
+            max-width: 800px; 
+            aspect-ratio: 1 / 1; 
             display: flex;
             align-items: center;
             justify-content: center;
@@ -59,8 +59,8 @@
         /* The Letter Bubbles */
         .letter-bubble {
             position: absolute;
-            width: clamp(25px, 5vw, 55px); /* Adjusted to scale better with a larger board */
-            height: clamp(25px, 5vw, 55px);
+            width: clamp(25px, 6vmin, 55px); /* FIX: Scales with minimum screen dimension */
+            height: clamp(25px, 6vmin, 55px);
             border-radius: 50%;
             background-color: var(--bubble-default);
             border: 2px solid rgba(255, 255, 255, 0.8);
@@ -68,7 +68,7 @@
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: clamp(14px, 3vw, 20px);
+            font-size: clamp(12px, 3vmin, 20px);
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
             transition: all 0.3s ease;
             z-index: 1;
@@ -112,7 +112,7 @@
         #timer {
             position: absolute;
             top: 6%; /* Anchors the timer directly to the top edge */
-            font-size: clamp(24px, 6vw, 42px); /* Reduced size */
+            font-size: clamp(24px, 6vmin, 42px); /* Scaled for smaller screens */
             font-weight: 900;
             color: #ffc107;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
@@ -154,7 +154,7 @@
         
         #question-image {
             grid-row: 2;
-            width: clamp(200px, 45vw, 380px); /* Markedly increased width */
+            width: clamp(180px, min(45vw, 35vh), 380px); /* FIX: Caps width if screen height is too short */
             aspect-ratio: 4 / 3; /* Keeps all images at a perfect 4:3 rectangle */
             object-fit: cover; /* Fills the box and crops excess without stretching */
             border-radius: 10px;
