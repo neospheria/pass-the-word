@@ -24,14 +24,15 @@
             justify-content: center;
             min-height: 100vh;
             margin: 0;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto; /* Allows scrolling on impossibly small screens instead of permanent cutoff */
         }
 
         #total-timer-display {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            font-size: clamp(16px, 3vw, 24px);
+            top: clamp(10px, 2vmin, 20px);
+            left: clamp(10px, 2vmin, 20px);
+            font-size: clamp(14px, 3vw, 24px);
             font-weight: bold;
             color: #ffffff;
             background-color: rgba(0, 0, 0, 0.4);
@@ -48,19 +49,20 @@
         /* The Game Board Container */
         #game-board {
             position: relative;
-            width: min(95vw, 85vh); /* FIX: Uses whichever is smaller to prevent cutting off */
+            width: min(95vw, 82vh); /* Increased breathing room for very wide/short screens */
             max-width: 800px; 
             aspect-ratio: 1 / 1; 
             display: flex;
             align-items: center;
             justify-content: center;
+            margin: 2vh 0; /* Add safety margin for scrolling */
         }
 
         /* The Letter Bubbles */
         .letter-bubble {
             position: absolute;
-            width: clamp(25px, 6vmin, 55px); /* FIX: Scales with minimum screen dimension */
-            height: clamp(25px, 6vmin, 55px);
+            width: clamp(20px, 5vmin, 55px); /* Increased squishability */
+            height: clamp(20px, 5vmin, 55px);
             border-radius: 50%;
             background-color: var(--bubble-default);
             border: 2px solid rgba(255, 255, 255, 0.8);
@@ -68,7 +70,7 @@
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: clamp(12px, 3vmin, 20px);
+            font-size: clamp(10px, 2.5vmin, 20px);
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
             transition: all 0.3s ease;
             z-index: 1;
@@ -92,8 +94,8 @@
         /* Center Panel (Timer, Question, Inputs) */
         #center-panel {
             position: absolute;
-            width: 78%; /* Increased from 65% to give much more internal space */
-            height: 78%; /* Increased from 65% */
+            width: 78%; 
+            height: 78%; 
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
@@ -103,7 +105,7 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 10px;
+            padding: 5%; /* Changed to relative padding */
             box-sizing: border-box;
             border: 2px solid rgba(255,255,255,0.2);
             box-shadow: inset 0 0 30px rgba(0,0,0,0.3);
@@ -111,8 +113,8 @@
 
         #timer {
             position: absolute;
-            top: 6%; /* Anchors the timer directly to the top edge */
-            font-size: clamp(24px, 6vmin, 42px); /* Scaled for smaller screens */
+            top: 4%; /* Pulled slightly higher */
+            font-size: clamp(20px, 5vmin, 42px); 
             font-weight: 900;
             color: #ffc107;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
@@ -142,23 +144,22 @@
         
         #game-screen.active {
             display: grid;
-            /* Adjusted to the perfect middle ground between 0.5 and 1.0 */
             grid-template-rows: 0.8fr auto 1.2fr; 
             align-items: center;
             justify-items: center;
         }
 
         /* Typography */
-        h1 { margin: 0 0 15px 0; font-size: clamp(20px, 5vw, 32px); text-transform: uppercase; letter-spacing: 2px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
-        h2 { margin: 0 0 10px 0; font-size: clamp(18px, 4vw, 24px); }
+        h1 { margin: 0 0 10px 0; font-size: clamp(18px, 4.5vmin, 32px); text-transform: uppercase; letter-spacing: 2px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        h2 { margin: 0 0 8px 0; font-size: clamp(16px, 4vmin, 24px); }
         
         #question-image {
             grid-row: 2;
-            width: clamp(180px, min(45vw, 35vh), 380px); /* FIX: Caps width if screen height is too short */
-            aspect-ratio: 4 / 3; /* Keeps all images at a perfect 4:3 rectangle */
-            object-fit: cover; /* Fills the box and crops excess without stretching */
+            width: min(55%, 380px); /* Strictly limits image to 55% of the circle width */
+            aspect-ratio: 4 / 3; 
+            object-fit: cover; 
             border-radius: 10px;
-            margin-bottom: 0; /* Removed margin so it sits perfectly in the middle */
+            margin-bottom: 0; 
             display: none;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
             background-color: white;
@@ -166,8 +167,8 @@
 
         #bottom-controls {
             grid-row: 3;
-            align-self: start; /* Pulls the controls up to sit immediately under the image */
-            margin-top: 15px; /* Adds a nice gap between the image and the text */
+            align-self: start; 
+            margin-top: 4%; /* Relative spacing */
             width: 100%;
             display: flex;
             flex-direction: column;
@@ -175,22 +176,23 @@
         }
 
         #question-text {
-            font-size: clamp(14px, 3.5vw, 18px);
-            margin-bottom: 5px; /* Reduced margin */
+            font-size: clamp(12px, 3vmin, 18px); /* Lowered minimum size */
+            margin-bottom: 2%; /* Relative spacing */
             display: flex;
             align-items: center;
             justify-content: center;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-            line-height: 1.3;
+            line-height: 1.2;
         }
 
         #revealed-answer {
-            font-size: clamp(18px, 4.5vw, 24px); /* Slightly smaller font */
+            font-size: clamp(14px, 3.5vmin, 24px); /* Lowered minimum size */
             font-weight: bold;
             color: white;
-            margin-bottom: 10px; /* Reduced margin */
+            margin-bottom: 3%; /* Relative spacing */
             text-transform: uppercase;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            line-height: 1.2;
         }
 
         /* Inputs & Buttons */
@@ -199,9 +201,9 @@
             padding: 10px 15px;
             border-radius: 25px;
             border: none;
-            font-size: 16px;
+            font-size: clamp(12px, 2.5vmin, 16px);
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 3%;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
             outline: none;
             transition: box-shadow 0.2s;
@@ -213,16 +215,16 @@
 
         .button-group {
             display: flex;
-            gap: 10px;
+            gap: clamp(5px, 2vmin, 10px);
             justify-content: center;
-            margin-top: 5px;
+            margin-top: 2%;
         }
 
         button {
-            padding: 10px 20px;
+            padding: clamp(6px, 1.5vmin, 10px) clamp(12px, 3vmin, 20px); /* Relative padding */
             border: none;
             border-radius: 25px;
-            font-size: 16px;
+            font-size: clamp(12px, 2.5vmin, 16px); /* Scalable font */
             font-weight: bold;
             cursor: pointer;
             transition: transform 0.1s, background-color 0.2s, box-shadow 0.2s;
@@ -241,14 +243,18 @@
         .btn-danger { background-color: var(--bubble-wrong); color: white; }
         .btn-danger:hover { background-color: #c82333; }
 
-        .btn-large { padding: 15px 30px; font-size: 18px; margin-top: 10px; }
+        .btn-large { 
+            padding: clamp(10px, 2.5vmin, 15px) clamp(20px, 5vmin, 30px); 
+            font-size: clamp(14px, 3vmin, 18px); 
+            margin-top: 10px; 
+        }
 
         /* End Screen Stats */
         .stats {
             display: flex;
             gap: 20px;
-            margin: 15px 0;
-            font-size: 20px;
+            margin: 10px 0;
+            font-size: clamp(16px, 4vmin, 20px);
             font-weight: bold;
         }
         .stat-correct { color: var(--bubble-correct); }
@@ -269,7 +275,7 @@
                 <!-- Start Screen -->
                 <div id="start-screen" class="screen active">
                     <h1>Passaparola</h1>
-                    <p style="margin-bottom: 20px;">Classroom Vocabulary Game</p>
+                    <p style="margin-bottom: 20px; font-size: clamp(12px, 3vmin, 16px);">Classroom Vocabulary Game</p>
                     <button class="btn-primary btn-large" onclick="startGame()">Start Game</button>
                 </div>
 
@@ -302,7 +308,7 @@
                         <div class="stat-correct">Correct: <span id="score-correct">0</span></div>
                         <div class="stat-wrong">Wrong: <span id="score-wrong">0</span></div>
                     </div>
-                    <p style="margin-bottom: 20px; font-weight: bold; font-size: 22px;">Total Time: <span id="final-time">00:00</span></p>
+                    <p style="margin-bottom: 20px; font-weight: bold; font-size: clamp(16px, 4vmin, 22px);">Total Time: <span id="final-time">00:00</span></p>
                     <button class="btn-primary btn-large" onclick="resetGame()">Play Again</button>
                 </div>
 
