@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pass the Word Game</title>
+    <style>
+        :root {
+            --bg-color: #0b2d52; /* Deep studio blue */
+            --bubble-default: #007bff;
+            --bubble-correct: #28a745;
+            --bubble-wrong: #dc3545;
+            --bubble-passed: #ffc107;
+            --text-color: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(circle at center, #1a4f8b 0%, var(--bg-color) 100%);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #total-timer-display {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: clamp(16px, 3vw, 24px);
+            font-weight: bold;
+            color: #ffffff;
+            background-color: rgba(0, 0, 0, 0.4);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            display: none;
+            z-index: 100;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        /* The Game Board Container */
+        #game-board {
+            position: relative;
+            width: 95vw;
+            max-width: 800px; /* Increased from 600px to make the circle much larger */
+            aspect-ratio: 1 / 1; /* Keep it perfectly square for the circle */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* The Letter Bubbles */
+        .letter-bubble {
+            position: absolute;
+            width: clamp(25px, 5vw, 55px); /* Adjusted to scale better with a larger board */
+            height: clamp(25px, 5vw, 55px);
+            border-radius: 50%;
+            background-color: var(--bubble-default);
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: clamp(14px, 3vw, 20px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+            z-index: 1;
+            /* Center the transformation origin */
+            transform: translate(-50%, -50%); 
+        }
+
+        /* Status Colors */
+        .letter-bubble.correct { background-color: var(--bubble-correct); border-color: white; }
+        .letter-bubble.wrong { background-color: var(--bubble-wrong); border-color: white; }
+        .letter-bubble.passed { background-color: var(--bubble-passed); color: #333; }
+        
+        /* Active Glowing State */
+        .letter-bubble.active {
+            transform: translate(-50%, -50%) scale(1.4);
+            box-shadow: 0 0 20px 5px rgba(255, 255, 255, 0.8);
+            z-index: 10;
+            border-color: #fff;
+        }
+
+        /* Center Panel (Timer, Question, Inputs) */
+        #center-panel {
+            position: absolute;
+            width: 78%; /* Increased from 65% to give much more internal space */
+            height: 78%; /* Increased from 65% */
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 2px solid rgba(255,255,255,0.2);
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.3);
+        }
+
+        #timer {
+            position: absolute;
+            top: 6%; /* Anchors the timer directly to the top edge */
+            font-size: clamp(24px, 6vw, 42px); /* Reduced size */
+            font-weight: 900;
+            color: #ffc107;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            font-variant-numeric: tabular-nums;
+            line-height: 1.1;
+        }
+
+        #screens-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Screen visibility */
+        .screen { 
+            display: none; 
+            width: 100%; 
+            height: 100%;
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+        }
+        .screen.active { display: flex; }
+        
+        #game-screen.active {
+            display: grid;
+            /* Adjusted to the perfect middle ground between 0.5 and 1.0 */
+            grid-template-rows: 0.8fr auto 1.2fr; 
+            align-items: center;
+            justify-items: center;
+        }
+
+        /* Typography */
+        h1 { margin: 0 0 15px 0; font-size: clamp(20px, 5vw, 32px); text-transform: uppercase; letter-spacing: 2px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        h2 { margin: 0 0 10px 0; font-size: clamp(18px, 4vw, 24px); }
+        
+        #question-image {
+            grid-row: 2;
+            width: clamp(200px, 45vw, 380px); /* Markedly increased width */
+            aspect-ratio: 4 / 3; /* Keeps all images at a perfect 4:3 rectangle */
+            object-fit: cover; /* Fills the box and crops excess without stretching */
+            border-radius: 10px;
+            margin-bottom: 0; /* Removed margin so it sits perfectly in the middle */
+            display: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            background-color: white;
+        }
+
+        #bottom-controls {
+            grid-row: 3;
+            align-self: start; /* Pulls the controls up to sit immediately under the image */
+            margin-top: 15px; /* Adds a nice gap between the image and the text */
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #question-text {
+            font-size: clamp(14px, 3.5vw, 18px);
+            margin-bottom: 5px; /* Reduced margin */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            line-height: 1.3;
+        }
+
+        #revealed-answer {
+            font-size: clamp(18px, 4.5vw, 24px); /* Slightly smaller font */
+            font-weight: bold;
+            color: white;
+            margin-bottom: 10px; /* Reduced margin */
+            text-transform: uppercase;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* Inputs & Buttons */
+        input[type="text"] {
+            width: 80%;
+            padding: 10px 15px;
+            border-radius: 25px;
+            border: none;
+            font-size: 16px;
+            text-align: center;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            outline: none;
+            transition: box-shadow 0.2s;
+        }
+
+        input[type="text"]:focus {
+            box-shadow: 0 0 0 3px #ffc107;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 5px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            text-transform: uppercase;
+        }
+
+        button:active { transform: scale(0.95); }
+
+        .btn-primary { background-color: var(--bubble-correct); color: white; }
+        .btn-primary:hover { background-color: #218838; }
+        
+        .btn-warning { background-color: var(--bubble-passed); color: #333; }
+        .btn-warning:hover { background-color: #e0a800; }
+
+        .btn-danger { background-color: var(--bubble-wrong); color: white; }
+        .btn-danger:hover { background-color: #c82333; }
+
+        .btn-large { padding: 15px 30px; font-size: 18px; margin-top: 10px; }
+
+        /* End Screen Stats */
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin: 15px 0;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .stat-correct { color: var(--bubble-correct); }
+        .stat-wrong { color: var(--bubble-wrong); }
+
+    </style>
+</head>
+<body>
+
+    <div id="total-timer-display">00:00</div>
+
+    <div id="game-board">
+        <!-- Letter bubbles are injected here via JS -->
+        
+        <div id="center-panel">
+            <div id="screens-container">
+                
+                <!-- Start Screen -->
+                <div id="start-screen" class="screen active">
+                    <h1>Passaparola</h1>
+                    <p style="margin-bottom: 20px;">Classroom Vocabulary Game</p>
+                    <button class="btn-primary btn-large" onclick="startGame()">Start Game</button>
+                </div>
+
+                <!-- Game Screen -->
+                <div id="game-screen" class="screen">
+                    <div id="timer">10</div>
+                    <img id="question-image" src="" alt="Vocabulary Image">
+                    
+                    <div id="bottom-controls">
+                        <div id="question-text">Loading question...</div>
+                        <div id="revealed-answer" style="visibility: hidden;"></div>
+                        
+                        <div class="button-group" id="action-buttons">
+                            <button class="btn-primary" onclick="markCorrectAndReveal()">Correct</button>
+                            <button class="btn-danger" onclick="markWrong()">Wrong (Reset)</button>
+                        </div>
+                        <div class="button-group" id="next-button-group" style="display: none;">
+                            <button class="btn-primary" onclick="nextQuestion()">Next Word</button>
+                        </div>
+                        <div class="button-group" id="restart-button-group" style="display: none;">
+                            <button class="btn-danger" onclick="startGame()">Restart Game</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- End Screen -->
+                <div id="end-screen" class="screen">
+                    <h2>Game Over!</h2>
+                    <div class="stats">
+                        <div class="stat-correct">Correct: <span id="score-correct">0</span></div>
+                        <div class="stat-wrong">Wrong: <span id="score-wrong">0</span></div>
+                    </div>
+                    <p style="margin-bottom: 20px; font-weight: bold; font-size: 22px;">Total Time: <span id="final-time">00:00</span></p>
+                    <button class="btn-primary btn-large" onclick="resetGame()">Play Again</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATASET: Edit your questions and answers here! ---
+        // To use an image, simply add image: "URL_LINK_HERE" to the word. 
+        // If you leave question: "" empty, only the image will show!
+        const originalDataset = [
+            { letter: "V", answer: "vacuum the house", question: "", image: "https://media.product.which.co.uk/prod/images/original/gm-7c728783-8936-4e50-aaa8-57443d7d1e2b-lead.jpg" },
+            { letter: "T", answer: "take out the garbage", question: "", image: "https://davidirvine.com/wp-content/uploads/2016/03/27garbage_600.jpg" },
+            { letter: "P", answer: "prepare the dishes", question: "", image: "https://media.istockphoto.com/id/1460914278/photo/a-happy-man-with-glasses-preparing-healthy-breakfast-while-standing-in-the-kitchen.jpg?s=612x612&w=0&k=20&c=tHQ0u5h4CifQ31u78ARdhMzccuS6N6uiGWDsyf1YZLc=" },
+            { letter: "M", answer: "mow the lawn", question: "", image: "https://images.immediate.co.uk/production/volatile/sites/10/2018/02/7af7ae15-ce98-4299-ba94-a4df303409f6-d4a3d64.jpg" },
+            { letter: "C", answer: "clean the windows", question: "", image: "https://www.bobvila.com/wp-content/uploads/2024/03/how-to-clean-windows_open.jpeg?w=1200" },
+            { letter: "L", answer: "load the dishwasher", question: "", image: "https://media.product.which.co.uk/prod/images/ar_2to1_1500x750/298b8f9e0b9a-loading-dishwasher.jpg" },
+            { letter: "W", answer: "water the flowers", question: "", image: "https://plus.unsplash.com/premium_photo-1683147685016-0c98356d51e7?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+            { letter: "D", answer: "dry the dishes", question: "", image: "https://cdn.mos.cms.futurecdn.net/FBc3hC5nMedoPiS5rvKJrT-800-80.jpg" },
+            { letter: "I", answer: "iron the clothes", question: "", image: "https://ishinedrycleaners.com/wp-content/uploads/2025/06/Why-Ironing-Your-Clothes-Is-Important.jpg" },
+            { letter: "S", answer: "set the table", question: "", image: "https://media.gettyimages.com/id/555173349/photo/close-up-of-mans-hand-setting-place-in-restaurant.jpg?s=612x612&w=0&k=20&c=2hI08DjWVGfALl12c1D8DJIqoqAeiNSUSf7MijHGk4A=" },
+            { letter: "D", answer: "do the laundry", question: "", image: "https://media.gettyimages.com/id/2212186373/photo/close-up-of-hand-putting-laundry-into-washing-machine.jpg?s=612x612&w=0&k=20&c=1LQzPvogtdX3aZJ2rm46jJ0iwCiNCkpZvSbKLKXZvaM=" },
+            { letter: "T", answer: "take care of our dog", question: "", image: "https://www.healthactiv.mu/media/2331/caring-for-your-pet.jpg?crop=0,0.0000000000000001201979284588,0,0&cropmode=percentage&width=1355&height=712&rnd=133014049870000000" },
+            { letter: "W", answer: "wash the car", question: "", image: "https://blog.napacanada.com/wp-content/uploads/2022/02/how-to-wash-your-car-in-the-cold-comment-laver-votre-voiture-dans-le-froid.jpg" },
+            { letter: "E", answer: "empty the dishwasher", question: "", image: "https://cdn.apartmenttherapy.info/image/upload/f_auto,q_auto:eco,c_fill,g_auto,w_1500,ar_3:2/k%2FPhoto%2FLifestyle%2F2019-09-ways-to-make-your-dishwasher-better%2FDishwasher_067" },
+            { letter: "M", answer: "make my bed", question: "", image: "https://www.eluxury.com/cdn/shop/articles/Make_a_Bed_1024x1024.jpg?v=1669816731" },
+            { letter: "C", answer: "clean the bathroom", question: "", image: "https://www.sanctuary-bathrooms.co.uk/storage/app/media/Blog%20Posts/Cleaning%20Bathroom%20with%20Vinegar/cleaning%20taps.jpeg" },
+            { letter: "D", answer: "do the grocery shopping", question: "", image: "https://cdn.ramseysolutions.net/media/b2c/every_dollar/article-images/everydollar-grocery-shopping-patterns.jpg" },
+            { letter: "M", answer: "mop the floors", question: "", image: "https://plus.unsplash.com/premium_photo-1726869721350-98cf25ef56da?q=80&w=1451&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+            { letter: "W", answer: "wash the dishes", question: "", image: "https://images.food52.com/3cF1ckOD6836SFj8rJ_14amLcbk=/535730a4-f977-4aee-a71c-02a48194bdfc--7582889968_e37d1915c6_o.jpg" },
+            { letter: "T", answer: "take care of my little brother", question: "", image: "https://plus.unsplash.com/premium_photo-1681997393652-1b9df2208885?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+            { letter: "D", answer: "dust the shelves", question: "", image: "https://plus.unsplash.com/premium_photo-1681824943427-8e17bf8cba51?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" }
+        ];
+
+        // Game State Variables
+        let questions = [];
+        let currentIndex = 0;
+        let timeLeft = 10;
+        let timerInterval;
+        const QUESTION_TIME_LIMIT = 10;
+
+        let totalSeconds = 0;
+        let totalTimerInterval;
+
+        // DOM Elements
+        const board = document.getElementById('game-board');
+        const timerDisplay = document.getElementById('timer');
+        const questionText = document.getElementById('question-text');
+        const questionImage = document.getElementById('question-image');
+        const totalTimerDisplay = document.getElementById('total-timer-display');
+
+        // Setup the Circular Board
+        function setupBoard() {
+            // Remove existing bubbles if any
+            document.querySelectorAll('.letter-bubble').forEach(e => e.remove());
+
+            // Add bubbles in a circle
+            const total = questions.length;
+            questions.forEach((q, i) => {
+                const bubble = document.createElement('div');
+                bubble.classList.add('letter-bubble');
+                bubble.id = `bubble-${i}`;
+                bubble.innerText = q.letter;
+                board.appendChild(bubble);
+            });
+
+            positionBubbles();
+        }
+
+        // Calculate positions dynamically
+        function positionBubbles() {
+            const bubbles = document.querySelectorAll('.letter-bubble');
+            const total = bubbles.length;
+            
+            // Using percentages for positioning to make it fully responsive
+            const radiusPercent = 46; // Increased from 43 to push letters closer to the outer edge
+            const step = (2 * Math.PI) / total;
+
+            bubbles.forEach((bubble, i) => {
+                // Start at top (-90 degrees)
+                const angle = (step * i) - (Math.PI / 2); 
+                
+                // Calculate percentage positions (50% is center)
+                const leftPercent = 50 + (radiusPercent * Math.cos(angle));
+                const topPercent = 50 + (radiusPercent * Math.sin(angle));
+
+                bubble.style.left = `${leftPercent}%`;
+                bubble.style.top = `${topPercent}%`;
+            });
+        }
+
+        // Recalculate on window resize
+        window.addEventListener('resize', positionBubbles);
+
+        // Core Game Functions
+        function startGame() {
+            // Deep copy dataset and add status field
+            questions = originalDataset.map(q => ({ ...q, status: 'pending' }));
+            currentIndex = 0;
+            
+            // Total timer setup
+            totalSeconds = 0;
+            updateTotalTimerDisplay();
+            totalTimerDisplay.style.display = 'block';
+            clearInterval(totalTimerInterval);
+            totalTimerInterval = setInterval(() => {
+                totalSeconds++;
+                updateTotalTimerDisplay();
+            }, 1000);
+
+            setupBoard();
+            showScreen('game-screen');
+            loadNextAvailableQuestion(0);
+        }
+
+        function loadNextAvailableQuestion(startIndex) {
+            if (startIndex >= questions.length) {
+                endGame(); // Reached the end without failing
+                return;
+            }
+            currentIndex = startIndex;
+            displayCurrentQuestion();
+        }
+
+        function displayCurrentQuestion() {
+            // Update visual active state on bubbles
+            document.querySelectorAll('.letter-bubble').forEach(b => b.classList.remove('active'));
+            const currentBubble = document.getElementById(`bubble-${currentIndex}`);
+            currentBubble.classList.add('active');
+            
+            // Handle image logic
+            if (questions[currentIndex].image) {
+                questionImage.src = questions[currentIndex].image;
+                questionImage.style.display = 'block';
+            } else {
+                questionImage.style.display = 'none';
+                questionImage.src = '';
+            }
+
+            // Handle text logic (hide if empty, useful if you only want an image)
+            if (questions[currentIndex].question) {
+                questionText.innerText = questions[currentIndex].question;
+                questionText.style.display = 'flex';
+            } else {
+                questionText.style.display = 'none';
+            }
+            
+            // Reset UI for new question
+            const answerDiv = document.getElementById('revealed-answer');
+            answerDiv.innerText = questions[currentIndex].answer; // Pre-fill to reserve exact space
+            answerDiv.style.visibility = 'hidden';
+            answerDiv.style.display = 'block';
+
+            document.getElementById('action-buttons').style.display = 'flex';
+            document.getElementById('next-button-group').style.display = 'none';
+            document.getElementById('restart-button-group').style.display = 'none';
+
+            // Reset and start timer for this question
+            timeLeft = QUESTION_TIME_LIMIT;
+            updateTimerDisplay();
+            clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function markCorrectAndReveal() {
+            clearInterval(timerInterval); // Stop timer while showing answer
+
+            const answerDiv = document.getElementById('revealed-answer');
+            answerDiv.style.visibility = 'visible'; // Make text visible without moving layout
+
+            questions[currentIndex].status = 'correct';
+            const bubble = document.getElementById(`bubble-${currentIndex}`);
+            bubble.classList.remove('passed', 'active');
+            bubble.classList.add('correct');
+
+            // Swap to Next button
+            document.getElementById('action-buttons').style.display = 'none';
+            document.getElementById('next-button-group').style.display = 'flex';
+        }
+
+        function nextQuestion() {
+            // Move to next question based on current position + 1
+            loadNextAvailableQuestion(currentIndex + 1);
+        }
+
+        function markWrong() {
+            clearInterval(timerInterval);
+            questions[currentIndex].status = 'wrong';
+            const bubble = document.getElementById(`bubble-${currentIndex}`);
+            bubble.classList.remove('passed', 'active');
+            bubble.classList.add('wrong');
+            
+            // Show restart button instead of auto-restarting
+            document.getElementById('action-buttons').style.display = 'none';
+            document.getElementById('restart-button-group').style.display = 'flex';
+        }
+
+        // Timer handling
+        function updateTimer() {
+            timeLeft--;
+            updateTimerDisplay();
+            
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                // The timer stops at 0, but we no longer automatically mark it wrong.
+                // The teacher can still press the Correct or Wrong buttons.
+            }
+        }
+
+        function updateTimerDisplay() {
+            timerDisplay.innerText = timeLeft;
+            if (timeLeft <= 3) {
+                timerDisplay.style.color = '#dc3545'; // Turn red in last 3 seconds
+            } else {
+                timerDisplay.style.color = '#ffc107'; // Default yellow
+            }
+        }
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function updateTotalTimerDisplay() {
+            totalTimerDisplay.innerText = formatTime(totalSeconds);
+        }
+
+        function endGame() {
+            clearInterval(timerInterval);
+            clearInterval(totalTimerInterval);
+            totalTimerDisplay.style.display = 'none';
+            
+            let correct = 0;
+            let wrong = 0;
+
+            questions.forEach(q => {
+                if (q.status === 'correct') correct++;
+                if (q.status === 'wrong') wrong++;
+            });
+
+            document.getElementById('score-correct').innerText = correct;
+            document.getElementById('score-wrong').innerText = wrong;
+            document.getElementById('final-time').innerText = formatTime(totalSeconds);
+            
+            // Determine title text based on condition
+            const endTitle = document.querySelector('#end-screen h2');
+            if (correct === questions.length) {
+                endTitle.innerText = "Perfect Game!";
+            } else {
+                endTitle.innerText = "Game Over!";
+            }
+
+            showScreen('end-screen');
+        }
+
+        function resetGame() {
+            showScreen('start-screen');
+        }
+
+        // Utility to switch center panel screens
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // Setup the initial background board on load just to look nice
+        questions = [...originalDataset]; 
+        setupBoard();
+
+    </script>
+</body>
+</html>
